@@ -1,5 +1,3 @@
-#include <globals.h>
-
 // TTGO T-Call pin definitions for built-in SIM800
 #define MODEM_RST 5
 #define MODEM_PWKEY 4
@@ -12,6 +10,11 @@
 #define TINY_GSM_MODEM_SIM800   // Modem is SIM800
 #define TINY_GSM_RX_BUFFER 1024 // Set RX buffer to 1Kb
 
+// Your GPRS credentials (leave empty, if missing)
+const char apn[] = "";      // Your APN
+const char gprsUser[] = ""; // User
+const char gprsPass[] = ""; // Password
+const char simPIN[] = "";   // SIM card PIN code, if any
 
 // Server details
 const char server[] = "vsh.pp.ua";

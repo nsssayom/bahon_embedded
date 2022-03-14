@@ -1,25 +1,12 @@
-#include<GsmCom.hpp>
-
+#include <GsmCom.hpp>
+#include <TinyGsmClient.h>
 // Implement the GsmCom class
 // Default constructor to set the APN, GPRS user, password and simPIN to empty strings
 
-GsmCom::GsmCom()
+GsmCom::GsmCom(TinyGsm *modem, TinyGsmClient *client)
 {
-    // Set the APN, GPRS user, password and simPIN to empty strings
-    apn[0] = '\0';
-    gprsUser[0] = '\0';
-    gprsPass[0] = '\0';
-    simPIN[0] = '\0';
-}
-
-// Constructor to set the APN, GPRS user, password and simPIN with default values as empty strings
-GsmCom::GsmCom(const char *apn, const char *gprsUser, const char *gprsPass, const char *simPIN)
-{
-    // Set the APN, GPRS user, password and simPIN
-    strcpy(this->apn, apn);
-    strcpy(this->gprsUser, gprsUser);
-    strcpy(this->gprsPass, gprsPass);
-    strcpy(this->simPIN, simPIN);
+    this->modem = modem;
+    this->client = client;
 }
 
 // function to bootstrap the modem
@@ -41,17 +28,17 @@ bool GsmCom::bootstrap()
     // Restart takes quite some time
     // To skip it, call init() instead of restart()
     SerialMon.println("Initializing modem...");
-    modem.restart();
+    modem->restart();
     // Or, use modem.init() if you don't need the complete restart
 
-    String modemInfo = modem.getModemInfo();
+    String modemInfo = modem->getModemInfo();
     SerialMon.print("Modem: ");
     SerialMon.println(modemInfo);
 
     // Unlock your SIM card with a PIN if needed
-    if (strlen(simPIN) && modem.getSimStatus() != 3)
+    if (strlen(simPIN) && modem->getSimStatus() != 3)
     {
-        if (modem.simUnlock(simPIN))
+        if (modem->simUnlock(simPIN))
         {
             SerialMon.println("SIM card unlocked");
         }
@@ -61,7 +48,8 @@ bool GsmCom::bootstrap()
             return false;
         }
     }
-    else{
+    else
+    {
         SerialMon.println("SIM card is already unlocked");
     }
     return true;
@@ -71,7 +59,7 @@ bool GsmCom::bootstrap()
 bool GsmCom::connectNetwork()
 {
     SerialMon.print("Waiting for network...");
-    if (!modem.waitForNetwork(240000L))
+    if (!modem->waitForNetwork(240000L))
     {
         SerialMon.println(" failed. Retrying...");
         delay(2000);
@@ -79,7 +67,7 @@ bool GsmCom::connectNetwork()
     }
     SerialMon.println(" OK");
 
-    if (modem.isNetworkConnected())
+    if (modem->isNetworkConnected())
     {
         SerialMon.println("Connected to network");
     }
@@ -91,7 +79,7 @@ bool GsmCom::connectGPRS()
 {
     SerialMon.print("Connecting to APN: ");
     SerialMon.print(apn);
-    if (!modem.gprsConnect(this->apn, this->gprsUser, this->gprsPass))
+    if (!modem->gprsConnect(apn, gprsUser, gprsPass))
     {
         SerialMon.println(" failed. Retrying...");
         delay(10000);
@@ -106,7 +94,7 @@ bool GsmCom::connectGPRS()
 bool GsmCom::disconnectGPRS()
 {
     SerialMon.println("Disconnecting from GPRS network...");
-    if (!modem.gprsDisconnect())
+    if (!modem->gprsDisconnect())
     {
         SerialMon.println(" failed. Retrying...");
         delay(10000);
@@ -120,7 +108,7 @@ bool GsmCom::disconnectGPRS()
 void GsmCom::restart()
 {
     SerialMon.println("Restarting modem...");
-    modem.restart();
+    modem->restart();
     SerialMon.println("Modem restarted");
 
     this->bootstrap();
@@ -131,19 +119,38 @@ void GsmCom::restart()
 bool GsmCom::sendData(const char *server, const char *port, const char *data)
 {
     // Connect to the GPRS network
-    if (!this->connectGPRS())
+    if (this->connectGPRS())
     {
-        SerialMon.println("Failed to connect to GPRS network");
-        return false;
+        // make a HTTP get request
+        client->print(String("GET ") + resource + " HTTP/1.1\r\n");
+        client->print(String("Host: ") + server + "\r\n");
+        client->print("Connection: close\r\n\r\n");
+        client->println();
     }
 
+    unsigned long timeout = millis();
+    while (client->connected() && millis() - timeout < 10000L)
+    {
+        // Print available data
+        while (client->available())
+        {
+            char c = client->read();
+            SerialMon.print(c);
+            timeout = millis();
+        }
+    }
+    SerialMon.println();
+
+    // Shutdown
+
+    client->stop();
+    SerialMon.println(F("Server disconnected"));
+
     // Print debug information
-    SerialMon.print("Sending data to ");
+    SerialMon.print("Sending request to ");
     SerialMon.print(server);
     SerialMon.print(":");
     SerialMon.println(port);
-   
-
 
     return true;
 }

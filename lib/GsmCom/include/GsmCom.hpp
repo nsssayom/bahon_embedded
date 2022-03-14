@@ -1,31 +1,22 @@
 #include "gsm_config.h"
-#include <TinyGsmClient.h>
+#include <globals.h>
 
 // Declate the GsmCom class
 class GsmCom
 {
-    // SIM card and Network information
-    char apn[];      // Your APN
-    char gprsUser[]; // User
-    char gprsPass[]; // Password
-    char simPIN[];   // SIM card PIN code, if any
-
-    // Initialize the modem
-    TinyGsm modem(SerialAT);
-
-    // Initialize TinyGsmClient
-    TinyGsmClient client(modem);
+    TinyGsm* modem;
+    TinyGsmClient* client;
 
 public:
-    // Default constructor to set the APN, GPRS user, password and simPIN to empty strings
-    GsmCom();
-
-    // Constructor to set the APN, GPRS user, password and simPIN with default values as empty strings
-    GsmCom(const char *apn, const char *gprsUser, const char *gprsPass, const char *simPIN);
+    // Default constructor to pass TinyGsm and TinyGsmClient object
+    GsmCom(TinyGsm* modem, TinyGsmClient* client);
 
     // function to bootstrap the modem
     bool bootstrap();
 
+    // function to connect to the network
+    bool connectNetwork();
+    
     // function to restart the modem 
     void restart();
 
@@ -33,9 +24,6 @@ public:
     bool sendData(const char *server, const char *port, const char *data);
 
 private:
-    // function to connect to the network
-    bool connectNetwork();
-
     // function to connect to the GPRS network
     bool connectGPRS();
 
