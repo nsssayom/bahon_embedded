@@ -1,23 +1,17 @@
-#include "gsm_config.h"
-#include <globals.h>
-
 // Declate the GsmCom class
 class GsmCom
 {
-    TinyGsm* modem;
-    TinyGsmClient* client;
-
 public:
-    // Default constructor to pass TinyGsm and TinyGsmClient object
-    GsmCom(TinyGsm* modem, TinyGsmClient* client);
+    // Default constructor
+    GsmCom();
 
     // function to bootstrap the modem
     bool bootstrap();
 
     // function to connect to the network
     bool connectNetwork();
-    
-    // function to restart the modem 
+
+    // function to restart the modem
     void restart();
 
     // function to send telemetry data to the server
