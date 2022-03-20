@@ -15,7 +15,7 @@ public:
     void restart();
 
     // function to send telemetry data to the server
-    bool sendData(const char *server, const char *port, const char *data);
+    bool sendData(const char *server, const int port, const char *data);
 
 private:
     // function to connect to the GPRS network

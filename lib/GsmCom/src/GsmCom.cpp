@@ -119,37 +119,87 @@ void GsmCom::restart()
 }
 
 // function to send telemetry data to the server
-bool GsmCom::sendData(const char *server, const char *port, const char *data)
+bool GsmCom::sendData(const char *server, const int port, const char *data)
 {
     // Connect to the GPRS network
     if (this->connectGPRS())
     {
+        // Connect the client to the server
+        if (!client.connect(server, port))
+        {
+            SerialMon.println(" fail");
+            delay(10000);
+            return false;
+        }
+
         // Print debug information
-        SerialMon.print("Sending request to ");
+        SerialMon.print("Connected to ");
         SerialMon.print(server);
         SerialMon.print(":");
         SerialMon.println(port);
-
 
         // make a HTTP get request
         client.print(String("GET ") + resource + " HTTP/1.1\r\n");
         client.print(String("Host: ") + server + "\r\n");
         client.print("Connection: close\r\n\r\n");
         client.println();
-    }
 
-    unsigned long timeout = millis();
-    while (client.connected() && millis() - timeout < 10000L)
-    {
-        // Print available data
-        while (client.available())
+        // wait for response and print it
+        unsigned long timeout = millis();
+        while (client.connected() && millis() - timeout < 10000L)
         {
-            char c = client.read();
-            SerialMon.print(c);
-            timeout = millis();
+            /* // Print available data
+            while (client.available())
+            {
+                char c = client.read();
+                SerialMon.print(c);
+                timeout = millis();
+            } */
+            // Read the whole response
+            String line = client.readStringUntil('\n');
+            /* if (line.startsWith("HTTP/1.1"))
+            {
+                SerialMon.print("HTTP Status: ");
+                SerialMon.println(line);
+            }
+            else if (line.startsWith("Content-Type:"))
+            {
+                SerialMon.print("Content-Type: ");
+                SerialMon.println(line);
+            }
+            else if (line.startsWith("Content-Length:"))
+            {
+                SerialMon.print("Content-Length: ");
+                SerialMon.println(line);
+            }
+            else if (line.startsWith("Date:"))
+            {
+                SerialMon.print("Date: ");
+                SerialMon.println(line);
+            }
+            else if (line.startsWith("Server:"))
+            {
+                SerialMon.print("Server: ");
+                SerialMon.println(line);
+            }
+            else if (line.startsWith("Connection:"))
+            {
+                SerialMon.print("Connection: ");
+                SerialMon.println(line);
+            }
+            else if (line.startsWith("\r"))
+            {
+                SerialMon.println("");
+            }
+            else
+            {
+                SerialMon.println(line);
+            } */
+            SerialMon.println(line);
         }
+        
+        SerialMon.println();
     }
-    SerialMon.println();
 
     // Shutdown the client
     client.stop();
